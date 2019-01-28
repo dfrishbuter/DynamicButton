@@ -12,6 +12,7 @@
 		6D3EF79C21676A3000251869 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6D3EF79B21676A3000251869 /* Assets.xcassets */; };
 		6D3EF79F21676A3000251869 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6D3EF79D21676A3000251869 /* LaunchScreen.storyboard */; };
 		6D3EF7B521676F4B00251869 /* DynamicButton.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D3EF7B421676F4B00251869 /* DynamicButton.framework */; };
+		6D81198A21FF1B95001FE05A /* UIImage+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198921FF1B95001FE05A /* UIImage+Sugar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		6D3EF79E21676A3000251869 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		6D3EF7A021676A3000251869 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6D3EF7B421676F4B00251869 /* DynamicButton.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = DynamicButton.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6D81198921FF1B95001FE05A /* UIImage+Sugar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIImage+Sugar.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 			children = (
 				6D3EF79421676A2F00251869 /* AppDelegate.swift */,
 				6D3EF79621676A2F00251869 /* ViewController.swift */,
+				6D81198921FF1B95001FE05A /* UIImage+Sugar.swift */,
 				6D3EF79B21676A3000251869 /* Assets.xcassets */,
 				6D3EF79D21676A3000251869 /* LaunchScreen.storyboard */,
 				6D3EF7A021676A3000251869 /* Info.plist */,
@@ -144,6 +147,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6D3EF79721676A2F00251869 /* ViewController.swift in Sources */,
+				6D81198A21FF1B95001FE05A /* UIImage+Sugar.swift in Sources */,
 				6D3EF79521676A2F00251869 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

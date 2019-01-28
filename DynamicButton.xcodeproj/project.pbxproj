@@ -7,15 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		6D3EF7B721676F7000251869 /* Foo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3EF7B621676F7000251869 /* Foo.swift */; };
+		6D3EF7B721676F7000251869 /* DynamicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3EF7B621676F7000251869 /* DynamicButton.swift */; };
 		6D3EF7BD2167710E00251869 /* DynamicButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D3EF7B9216770FF00251869 /* DynamicButton.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6D81198021FEE209001FE05A /* GradientDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81197F21FEE209001FE05A /* GradientDirection.swift */; };
+		6D81198221FEE3EE001FE05A /* UIControlState+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */; };
+		6D81198421FF05AC001FE05A /* CATransaction+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198321FF05AC001FE05A /* CATransaction+Sugar.swift */; };
+		6D81198C21FF2A95001FE05A /* UIColor+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198B21FF2A95001FE05A /* UIColor+Sugar.swift */; };
+		6D81198E21FF3229001FE05A /* Optional+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198D21FF3229001FE05A /* Optional+Sugar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		6D3EF77D21675CFA00251869 /* DynamicButton.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DynamicButton.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		6D3EF7B621676F7000251869 /* Foo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Foo.swift; sourceTree = "<group>"; };
+		6D3EF7B621676F7000251869 /* DynamicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicButton.swift; sourceTree = "<group>"; };
 		6D3EF7B9216770FF00251869 /* DynamicButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DynamicButton.h; sourceTree = "<group>"; };
 		6D3EF7BA216770FF00251869 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6D81197F21FEE209001FE05A /* GradientDirection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GradientDirection.swift; sourceTree = "<group>"; };
+		6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIControlState+Hashable.swift"; sourceTree = "<group>"; };
+		6D81198321FF05AC001FE05A /* CATransaction+Sugar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CATransaction+Sugar.swift"; sourceTree = "<group>"; };
+		6D81198B21FF2A95001FE05A /* UIColor+Sugar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Sugar.swift"; sourceTree = "<group>"; };
+		6D81198D21FF3229001FE05A /* Optional+Sugar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Optional+Sugar.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -49,7 +59,12 @@
 		6D3EF7AC21676AE100251869 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
-				6D3EF7B621676F7000251869 /* Foo.swift */,
+				6D81197F21FEE209001FE05A /* GradientDirection.swift */,
+				6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */,
+				6D81198321FF05AC001FE05A /* CATransaction+Sugar.swift */,
+				6D81198B21FF2A95001FE05A /* UIColor+Sugar.swift */,
+				6D81198D21FF3229001FE05A /* Optional+Sugar.swift */,
+				6D3EF7B621676F7000251869 /* DynamicButton.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -142,7 +157,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6D3EF7B721676F7000251869 /* Foo.swift in Sources */,
+				6D3EF7B721676F7000251869 /* DynamicButton.swift in Sources */,
+				6D81198021FEE209001FE05A /* GradientDirection.swift in Sources */,
+				6D81198221FEE3EE001FE05A /* UIControlState+Hashable.swift in Sources */,
+				6D81198C21FF2A95001FE05A /* UIColor+Sugar.swift in Sources */,
+				6D81198E21FF3229001FE05A /* Optional+Sugar.swift in Sources */,
+				6D81198421FF05AC001FE05A /* CATransaction+Sugar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
