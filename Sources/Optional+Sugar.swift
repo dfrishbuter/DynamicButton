@@ -3,6 +3,42 @@
 //  Copyright © 2019 Dmitry Frishbuter. All rights reserved.
 //
 
+extension Optional where Wrapped == Collection {
+
+    var isNilOrEmpty: Bool {
+        switch self {
+        case .some(let wrapped):
+            return wrapped.isEmpty
+        case .none:
+            return true
+        }
+    }
+}
+
+extension Optional where Wrapped == String {
+
+    var isNilOrEmpty: Bool {
+        switch self {
+        case .some(let wrapped):
+            return wrapped.isEmpty
+        case .none:
+            return true
+        }
+    }
+}
+
+extension Optional where Wrapped == NSAttributedString {
+
+    var isNilOrEmpty: Bool {
+        switch self {
+        case .some(let wrapped):
+            return wrapped.string.isEmpty
+        case .none:
+            return true
+        }
+    }
+}
+
 extension Optional {
 
     /// Assign an optional value to a variable only if the value is not nil.

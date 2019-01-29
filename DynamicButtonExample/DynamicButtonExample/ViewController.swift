@@ -23,6 +23,7 @@ final class ViewController: UIViewController {
         button.setBorderColor(.red, for: .normal)
         button.setShadowOpacity(0.6, for: .normal)
         button.setShadowRadius(3.0, for: .normal)
+        button.setImage(UIImage(named: "icFacebook"), for: .normal)
 //        button.setShadowOpacity(1.0, for: .normal)
 //        button.setBackgroundColor(.blue, for: .highlighted)
         button.cornerRadius = 10
