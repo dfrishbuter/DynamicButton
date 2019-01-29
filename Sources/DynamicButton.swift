@@ -7,6 +7,10 @@ import UIKit
 
 open class DynamicButton: UIControl {
 
+    private enum Constants {
+        static let animationDuration: TimeInterval = 0.15
+    }
+
     private(set) lazy var contentView: UIView = {
         let view = UIView()
         view.isUserInteractionEnabled = false
@@ -61,29 +65,14 @@ open class DynamicButton: UIControl {
 
     var automaticallyAdjustsWhenHighlighted: Bool = true
 
-//    private var controlState: State {
-//        var controlState: State = .normal
-//        if isSelected {
-//            controlState = controlState.union(.selected)
-//        }
-//        if isHighlighted {
-//            controlState = controlState.union(.highlighted)
-//        }
-//        if !isEnabled {
-//            controlState = controlState.union(.disabled)
-//        }
-//        return controlState
-//    }
-
     private var titles: [State: String?] = [:]
     private var images: [State: UIImage?] = [:]
 
     private var titleColors: [State: UIColor] = [:]
     private var backgroundColors: [State: [UIColor]] = [:]
     private var borderColors: [State: UIColor] = [:]
-    private var shadowColors: [State: UIColor] = [:]
     private var shadowOpacities: [State: Float] = [:]
-    private var shadowOffsets: [State: CGSize] = [:]
+    private var shadowRadii: [State: CGFloat] = [:]
 
     private var borderWidth: CGFloat = 1 {
         didSet {
@@ -95,6 +84,18 @@ open class DynamicButton: UIControl {
         didSet {
             layer.cornerRadius = cornerRadius
             contentView.layer.cornerRadius = cornerRadius
+        }
+    }
+
+    var shadowOffset: CGSize = .init(width: 0, height: 2) {
+        didSet {
+            layer.shadowOffset = shadowOffset
+        }
+    }
+
+    var shadowColor: UIColor = UIColor.black.withAlphaComponent(0.6) {
+        didSet {
+            layer.shadowColor = shadowColor.cgColor
         }
     }
 
@@ -113,8 +114,8 @@ open class DynamicButton: UIControl {
     private func initialize() {
         addSubview(contentView)
 
+        layer.shadowOffset = shadowOffset
         layer.masksToBounds = false
-        layer.shadowOpacity = 1
 
         contentView.layer.masksToBounds = true
         contentView.layer.addSublayer(backgroundLayer)
@@ -165,8 +166,13 @@ open class DynamicButton: UIControl {
     }
 
     open func setShadowOpacity(_ opacity: Float, for state: State) {
+        layer.shadowOpacity = opacity
         shadowOpacities[state] = opacity
-        adjustToState()
+    }
+
+    open func setShadowRadius(_ radius: CGFloat, for state: State) {
+        layer.shadowRadius = radius
+        shadowRadii[state] = radius
     }
 
     public func setHighlighted(_ highlighted: Bool, animated: Bool) {
@@ -199,19 +205,41 @@ open class DynamicButton: UIControl {
     }
 
     private func adjustLayerToState() {
-        if let shadowColor = shadowColors[state] {
-            layer.shadowColor = shadowColor.cgColor
-        }
-        if let shadowOffset = shadowOffsets[state] {
-            layer.shadowOffset = shadowOffset
-        }
-        if let shadowOpacity = shadowOpacities[state] {
-            layer.shadowOpacity = shadowOpacity
+        if let shadowRadius = shadowRadii[state] {
+            let radiusAnimation = shadowRadiusAnimation(to: shadowRadius)
+            layer.add(radiusAnimation, forKey: radiusAnimation.keyPath!)
         } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-            if let shadowOpacity = shadowOpacities[.normal] {
-                layer.shadowOpacity = shadowOpacity * 0.5
-            }
+            let shadowRadius: CGFloat = 0.0
+            let radiusAnimation = shadowRadiusAnimation(to: shadowRadius)
+            layer.add(radiusAnimation, forKey: radiusAnimation.keyPath!)
         }
+
+        if let shadowOpacity = shadowOpacities[state] {
+            let opacityAnimation = shadowOpacityAnimation(to: shadowOpacity)
+            layer.add(opacityAnimation, forKey: opacityAnimation.keyPath!)
+        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
+            let shadowOpacity: Float = 0.0
+            let opacityAnimation = shadowOpacityAnimation(to: shadowOpacity)
+            layer.add(opacityAnimation, forKey: opacityAnimation.keyPath!)
+        }
+    }
+
+    private func shadowRadiusAnimation(to value: CGFloat) -> CABasicAnimation {
+        let radiusAnimation = CABasicAnimation(keyPath: #keyPath(CALayer.shadowRadius))
+        radiusAnimation.toValue = value
+        radiusAnimation.duration = Constants.animationDuration
+        radiusAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        radiusAnimation.delegate = self
+        return radiusAnimation
+    }
+
+    private func shadowOpacityAnimation(to value: Float) -> CABasicAnimation {
+        let opacityAnimation = CABasicAnimation(keyPath: #keyPath(CALayer.shadowOpacity))
+        opacityAnimation.toValue = value
+        opacityAnimation.duration = Constants.animationDuration * 0.5
+        opacityAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        opacityAnimation.delegate = self
+        return opacityAnimation
     }
 
     private func adjustBackgroundLayerToState() {
@@ -221,18 +249,21 @@ open class DynamicButton: UIControl {
             } else {
                 backgroundLayer.backgroundColor = backgroundColors.first?.cgColor
             }
-        } else {
-            if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-                if let backgroundColors = backgroundColors[.normal] {
+        } else if let backgroundColors = backgroundColors[.normal] {
+            if state == .highlighted {
+                if automaticallyAdjustsWhenHighlighted {
                     if backgroundColors.count > 1 {
                         backgroundLayer.colors = backgroundColors.map { $0.lighten().cgColor }
                     } else {
                         backgroundLayer.backgroundColor = backgroundColors.first?.lighten().cgColor
                     }
+                } else {
+                    if backgroundColors.count > 1 {
+                        backgroundLayer.colors = backgroundColors.map { $0.cgColor }
+                    } else {
+                        backgroundLayer.backgroundColor = backgroundColors.first?.cgColor
+                    }
                 }
-            } else {
-                backgroundLayer.backgroundColor = nil
-                backgroundLayer.colors = nil
             }
         }
     }
@@ -246,20 +277,6 @@ open class DynamicButton: UIControl {
             }
         }
 
-        let boundsAnimation = layer.animation(forKey: "bounds.size")
-
-        CATransaction.begin()
-
-        if let animation = boundsAnimation {
-            CATransaction.setAnimationDuration(animation.duration)
-            CATransaction.setAnimationTimingFunction(animation.timingFunction)
-
-            let pathAnimation = CABasicAnimation(keyPath: "path")
-            borderLayer.add(pathAnimation, forKey: "path")
-        } else {
-            CATransaction.disableActions()
-        }
-
         let borderRect = CGRect(
             x: borderWidth / 2, y: borderWidth / 2,
             width: bounds.width - borderWidth, height: bounds.height - borderWidth
@@ -267,8 +284,6 @@ open class DynamicButton: UIControl {
         let radius = CGSize(width: layer.cornerRadius - borderWidth / 2, height: layer.cornerRadius - borderWidth / 2)
         let borderPath = UIBezierPath(roundedRect: borderRect, byRoundingCorners: .allCorners, cornerRadii: radius)
         borderLayer.path = borderPath.cgPath
-
-        CATransaction.commit()
     }
 
     func adjustViewToState() {
@@ -280,11 +295,11 @@ open class DynamicButton: UIControl {
     private func update(to state: State, animated: Bool) {
         DispatchQueue.main.async {
             if animated {
-                let duration: TimeInterval = 0.2
-                CATransaction.commit(withDuration: duration, timingFunction: CAMediaTimingFunction(name: .easeInEaseOut)) {
+                let duration: TimeInterval = Constants.animationDuration
+                CATransaction.commit(withDuration: duration, timingFunction: CAMediaTimingFunction(name: .easeOut)) {
                     self.adjustLayersToState()
                 }
-                UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut], animations: {
+                UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseOut], animations: {
                     self.adjustViewToState()
                 })
             } else {
@@ -293,6 +308,29 @@ open class DynamicButton: UIControl {
                 }
                 self.adjustViewToState()
             }
+        }
+    }
+}
+
+// MARK: - CAAnimationDelegate
+
+extension DynamicButton: CAAnimationDelegate {
+
+    public func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
+        guard let animation = anim as? CABasicAnimation, let keyPath = animation.keyPath, flag else {
+            return
+        }
+        switch keyPath {
+        case #keyPath(CALayer.shadowRadius):
+            if let shadowRadius = animation.toValue as? CGFloat {
+                layer.shadowRadius = shadowRadius
+            }
+        case #keyPath(CALayer.shadowOpacity):
+            if let shadowOpacity = animation.toValue as? Float {
+                layer.shadowOpacity = shadowOpacity
+            }
+        default:
+            break
         }
     }
 }
