@@ -7,6 +7,12 @@ import UIKit
 
 open class DynamicButton: UIControl {
 
+    private enum Constants {
+        static let animationDuration: TimeInterval = 0.15
+    }
+
+    // MARK: - Layout Properties
+
     public enum LayoutDirection {
         case horizontal
         case vertical
@@ -26,10 +32,6 @@ open class DynamicButton: UIControl {
     public enum ImageAlignment {
         case beginning
         case end
-    }
-
-    private enum Constants {
-        static let animationDuration: TimeInterval = 0.15
     }
 
     open var contentEdgeInsets: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
@@ -84,6 +86,8 @@ open class DynamicButton: UIControl {
         }
     }
 
+    // MARK: - Subviews
+
     private(set) lazy var contentView: UIView = {
         let view = UIView()
         view.isUserInteractionEnabled = false
@@ -104,12 +108,18 @@ open class DynamicButton: UIControl {
 
     private lazy var backgroundLayer: CAGradientLayer = .init()
 
+    // MARK: - UIControl
+
     open override var isHighlighted: Bool {
         get {
             return super.isHighlighted
         }
         set {
-            setHighlighted(newValue, animated: true)
+            guard newValue != super.isHighlighted else {
+                return
+            }
+            super.isHighlighted = newValue
+            update(to: state, animated: true)
         }
     }
 
@@ -118,7 +128,11 @@ open class DynamicButton: UIControl {
             return super.isSelected
         }
         set {
-            setSelected(newValue, animated: true)
+            guard newValue != super.isSelected else {
+                return
+            }
+            super.isSelected = newValue
+            update(to: state, animated: true)
         }
     }
 
@@ -127,10 +141,15 @@ open class DynamicButton: UIControl {
             return super.isEnabled
         }
         set {
+            guard newValue != super.isEnabled else {
+                return
+            }
             super.isEnabled = newValue
-            adjustToState(animated: false)
+            update(to: state, animated: false)
         }
     }
+
+    // MARK: - Appearance
 
     var automaticallyAdjustsWhenHighlighted: Bool = true
 
@@ -295,7 +314,7 @@ open class DynamicButton: UIControl {
         }
     }
 
-    // MARK: - Setters
+    // MARK: - Appearance Setters
 
     open func setTitle(_ title: String?, for state: State) {
         titles[state] = title
@@ -316,7 +335,7 @@ open class DynamicButton: UIControl {
         } else {
             backgroundColors[state] = []
         }
-        adjustToState(animated: false)
+        adjustBackgroundLayerToState()
     }
 
     open func setBorderColor(_ color: UIColor?, for state: State) {
@@ -334,28 +353,7 @@ open class DynamicButton: UIControl {
         shadowRadii[state] = radius
     }
 
-    public func setHighlighted(_ highlighted: Bool, animated: Bool) {
-        guard highlighted != super.isHighlighted else {
-            return
-        }
-        super.isHighlighted = highlighted
-        update(to: state, animated: animated)
-    }
-
-    public func setSelected(_ selected: Bool, animated: Bool) {
-        guard selected != super.isSelected else {
-            return
-        }
-        super.isSelected = selected
-        update(to: state, animated: animated)
-    }
-
     // MARK: - Adjustment
-
-    private func adjustToState(animated: Bool) {
-        adjustLayersToState(animated: animated)
-        adjustViewToState()
-    }
 
     private func adjustLayersToState(animated: Bool) {
         adjustBackgroundLayerToState()
@@ -513,7 +511,7 @@ extension DynamicButton: CAAnimationDelegate {
             }
         case #keyPath(CALayer.borderColor):
             if let borderColor = animation.toValue {
-                contentView.layer.borderColor = (borderColor as! CGColor)
+                contentView.layer.borderColor = (borderColor as! CGColor) // swiftlint:disable:this force_cast
             }
         default:
             break
