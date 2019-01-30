@@ -173,13 +173,14 @@ open class DynamicButton: UIControl {
 
     // MARK: - Appearance
 
-    var automaticallyAdjustsWhenHighlighted: Bool = true
+    public var automaticallyAdjustsWhenHighlighted: Bool = true
 
     private var titles: [State: String?] = [:]
     private var images: [State: UIImage?] = [:]
 
     private var titleColors: [State: UIColor] = [:]
-    private var backgroundColors: [State: [UIColor]] = [:]
+    private var backgroundColors: [State: UIColor] = [:]
+    private var gradients: [State: Gradient] = [:]
     private var borderColors: [State: UIColor] = [:]
     private var shadowOpacities: [State: Float] = [:]
 
@@ -423,6 +424,7 @@ open class DynamicButton: UIControl {
 
     open func setTitleColor(_ color: UIColor?, for state: State) {
         titleColors[state] = color
+        adjustViewToState()
     }
 
     open func setImage(_ image: UIImage?, for state: State) {
@@ -430,12 +432,13 @@ open class DynamicButton: UIControl {
         imageView.image = image
     }
 
+    open func setGradient(_ gradient: Gradient, for state: State) {
+        gradients[state] = gradient
+        adjustBackgroundLayerToState()
+    }
+
     open func setBackgroundColor(_ color: UIColor?, for state: State) {
-        if let color = color {
-            backgroundColors[state] = [color]
-        } else {
-            backgroundColors[state] = []
-        }
+        backgroundColors[state] = color
         adjustBackgroundLayerToState()
     }
 
@@ -466,20 +469,37 @@ open class DynamicButton: UIControl {
     }
 
     private func adjustBackgroundLayerToState() {
-        if let backgroundColors = backgroundColors[state] {
-            if backgroundColors.count > 1 {
-                backgroundLayer.colors = backgroundColors.map { $0.cgColor }
-            } else {
-                backgroundLayer.backgroundColor = backgroundColors.first?.cgColor
-            }
-        } else if let backgroundColors = backgroundColors[.normal] {
+        if let backgroundColor = backgroundColors[state] {
+            backgroundLayer.backgroundColor = backgroundColor.cgColor
+        } else if let backgroundColor = backgroundColors[.normal] {
             if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-                if backgroundColors.count > 1 {
-                    backgroundLayer.colors = backgroundColors.map { $0.lighten().cgColor }
-                } else {
-                    backgroundLayer.backgroundColor = backgroundColors.first?.lighten().cgColor
-                }
+                backgroundLayer.backgroundColor = backgroundColor.lighten().cgColor
             }
+        }
+
+        if let gradient = gradients[state] {
+            backgroundLayer.colors = gradient.colors.map { $0.cgColor }
+            let points = gradientPoints(for: gradient.direction)
+            backgroundLayer.startPoint = points.start
+            backgroundLayer.endPoint = points.end
+        } else if let gradient = gradients[.normal] {
+            if state == .highlighted, automaticallyAdjustsWhenHighlighted {
+                backgroundLayer.colors = gradient.colors.map { $0.lighten().cgColor }
+                let points = gradientPoints(for: gradient.direction)
+                backgroundLayer.startPoint = points.start
+                backgroundLayer.endPoint = points.end
+            }
+        }
+    }
+
+    private func gradientPoints(for direction: Gradient.Direction) -> (start: CGPoint, end: CGPoint) {
+        switch direction {
+        case .vertical:
+            return (CGPoint(x: 0.5, y: 1.0), CGPoint(x: 0.5, y: 0.0))
+        case .horizontal:
+            return (CGPoint(x: 0.0, y: 0.5), CGPoint(x: 1.0, y: 0.5))
+        case let .custom(start, end):
+            return (start, end)
         }
     }
 
@@ -494,7 +514,20 @@ open class DynamicButton: UIControl {
     }
 
     private func adjustViewToState() {
-        titleLabel.textColor = titleColors[state]
+        if let titleColor = titleColors[state] {
+            titleLabel.textColor = titleColor
+        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
+            if let titleColor = titleColors[.normal] {
+                titleLabel.textColor = titleColor.lighten()
+            }
+        }
+        if let image = images[state] {
+            imageView.image = image
+        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
+            if let image = images[.normal] {
+                imageView.image = image?.tinted(with: UIColor.white, alpha: 0.5)
+            }
+        }
     }
 
     // MARK: - Animations

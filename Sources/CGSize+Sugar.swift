@@ -1,6 +1,6 @@
 //
 //  Created by Dmitry Frishbuter on 21/10/2018
-//  Copyright © 2018 Ronas IT. All rights reserved.
+//  Copyright © 2018 Dmitry Frishbuter. All rights reserved.
 //
 
 import UIKit
