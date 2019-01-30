@@ -36,7 +36,7 @@ open class DynamicButton: UIControl {
 
     open var contentEdgeInsets: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
     open var layoutDirection: LayoutDirection = .horizontal
-    open var layoutHorizontalAlignment: LayoutHorizontalAlignment = .justified
+    open var layoutHorizontalAlignment: LayoutHorizontalAlignment = .center
     open var layoutVerticalAlignment: LayoutVerticalAlignment = .center
     open var imageAlignment: ImageAlignment = .beginning
     open var contentSpacing: CGFloat = 16
@@ -47,6 +47,7 @@ open class DynamicButton: UIControl {
         }
         return .zero
     }
+
     private var titleSize: CGSize {
         var size = bounds.size.minusInsets(contentEdgeInsets)
         switch layoutDirection {
@@ -57,18 +58,21 @@ open class DynamicButton: UIControl {
         }
         return titleLabel.sizeThatFits(size)
     }
-    private var leftViewSize: CGSize {
+
+    private var firstViewSize: CGSize {
         if case ImageAlignment.beginning = imageAlignment {
             return imageSize
         }
         return titleSize
     }
-    private var rightViewSize: CGSize {
+
+    private var secondViewSize: CGSize {
         if case ImageAlignment.beginning = imageAlignment {
             return titleSize
         }
         return imageSize
     }
+
     private var contentWidth: CGFloat {
         switch layoutDirection {
         case .horizontal:
@@ -77,6 +81,7 @@ open class DynamicButton: UIControl {
             return max(imageSize.width, titleSize.width)
         }
     }
+
     private var contentHeight: CGFloat {
         switch layoutDirection {
         case .horizontal:
@@ -209,7 +214,7 @@ open class DynamicButton: UIControl {
         contentView.layer.borderWidth = borderWidth
         contentView.layer.addSublayer(backgroundLayer)
 
-//        layer.speed = 0.1
+        layer.speed = 0.1
 
         contentView.addSubview(imageView)
         contentView.addSubview(titleLabel)
@@ -226,16 +231,15 @@ open class DynamicButton: UIControl {
         case .horizontal:
             layoutHorizontally()
         case .vertical:
-            break
-//            layoutVertically()
+            layoutVertically()
         }
     }
 
     private func layoutHorizontally() {
         let leftView = leftViewForHorizontalLayout()
         let rightView = rightViewForHorizontalLayout()
-        leftView?.frame.size = leftViewSize
-        rightView?.frame.size = rightViewSize
+        leftView?.frame.size = firstViewSize
+        rightView?.frame.size = secondViewSize
 
         switch layoutHorizontalAlignment {
         case .left:
@@ -244,7 +248,7 @@ open class DynamicButton: UIControl {
                 arrangeViewVerticallyForHorizontalLayout(leftView)
             }
             if let rightView = rightView {
-                if let leftView = leftView, leftViewSize != .zero {
+                if let leftView = leftView, firstViewSize != .zero {
                     rightView.frame.origin.x = leftView.frame.maxX + contentSpacing
                 } else {
                     rightView.frame.origin.x = contentEdgeInsets.left
@@ -257,7 +261,7 @@ open class DynamicButton: UIControl {
                 arrangeViewVerticallyForHorizontalLayout(leftView)
             }
             if let rightView = rightView {
-                if let leftView = leftView, leftViewSize != .zero {
+                if let leftView = leftView, firstViewSize != .zero {
                     rightView.frame.origin.x = leftView.frame.maxX + contentSpacing
                 } else {
                     rightView.frame.origin.x = (bounds.width - rightView.bounds.width) / 2
@@ -289,6 +293,64 @@ open class DynamicButton: UIControl {
         }
     }
 
+    private func layoutVertically() {
+        let topView = topViewForVerticalLayout()
+        let bottomView = bottomViewForVerticalLayout()
+        topView?.frame.size = firstViewSize
+        bottomView?.frame.size = secondViewSize
+
+        switch layoutVerticalAlignment {
+        case .top:
+            if let topView = topView {
+                topView.frame.origin.y = contentEdgeInsets.top
+                arrangeViewHorizontallyForVerticalLayout(topView)
+            }
+            if let bottomView = bottomView {
+                if let topView = topView {
+                    bottomView.frame.origin.y = topView.frame.maxY + contentSpacing
+                } else {
+                    bottomView.frame.origin.y = contentEdgeInsets.top
+                }
+                arrangeViewHorizontallyForVerticalLayout(bottomView)
+            }
+        case .center:
+            if let topView = topView {
+                topView.frame.origin.y = (bounds.height - contentHeight) / 2
+                arrangeViewHorizontallyForVerticalLayout(topView)
+            }
+            if let bottomView = bottomView {
+                if let topView = topView {
+                    bottomView.frame.origin.y = topView.frame.maxY + contentSpacing
+                } else {
+                    bottomView.frame.origin.y = (bounds.height - bottomView.bounds.height) / 2
+                }
+                arrangeViewHorizontallyForVerticalLayout(bottomView)
+            }
+        case .bottom:
+            if let bottomView = bottomView {
+                bottomView.frame.origin.y = bounds.height - contentEdgeInsets.bottom - bottomView.bounds.height
+                arrangeViewHorizontallyForVerticalLayout(bottomView)
+            }
+            if let topView = topView {
+                if let bottomView = bottomView {
+                    topView.frame.origin.y = bottomView.frame.minY - contentSpacing - topView.bounds.height
+                } else {
+                    topView.frame.origin.y = bounds.height - contentEdgeInsets.bottom - topView.bounds.height
+                }
+                arrangeViewHorizontallyForVerticalLayout(topView)
+            }
+        case .justified:
+            if let topView = topView {
+                topView.frame.origin.y = contentEdgeInsets.top
+                arrangeViewHorizontallyForVerticalLayout(topView)
+            }
+            if let bottomView = bottomView {
+                bottomView.frame.origin.y = bounds.height - contentEdgeInsets.bottom - bottomView.bounds.height
+                arrangeViewHorizontallyForVerticalLayout(bottomView)
+            }
+        }
+    }
+
     private func leftViewForHorizontalLayout() -> UIView? {
         if case ImageAlignment.beginning = imageAlignment {
             return imageView.image != nil ? imageView : nil
@@ -303,14 +365,39 @@ open class DynamicButton: UIControl {
         return imageView.image != nil ? imageView : nil
     }
 
+    private func topViewForVerticalLayout() -> UIView? {
+        if case ImageAlignment.beginning = imageAlignment {
+            return imageView.image != nil ? imageView : nil
+        }
+        return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
+    }
+
+    private func bottomViewForVerticalLayout() -> UIView? {
+        if case ImageAlignment.beginning = imageAlignment {
+            return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
+        }
+        return imageView.image != nil ? imageView : nil
+    }
+
     private func arrangeViewVerticallyForHorizontalLayout(_ view: UIView) {
         switch layoutVerticalAlignment {
         case .top, .justified:
-            view.frame.origin.y = (contentHeight - bounds.height) / 2 + contentEdgeInsets.top
+            view.frame.origin.y = contentEdgeInsets.top
         case .center:
             view.frame.origin.y = (bounds.height - view.bounds.height) / 2
         case .bottom:
             view.frame.origin.y = bounds.height - contentEdgeInsets.bottom - view.bounds.height
+        }
+    }
+
+    private func arrangeViewHorizontallyForVerticalLayout(_ view: UIView) {
+        switch layoutHorizontalAlignment {
+        case .left:
+            view.frame.origin.x = contentEdgeInsets.left
+        case .center:
+            view.frame.origin.x = (bounds.width - view.bounds.width) / 2
+        case .right, .justified:
+            view.frame.origin.x = bounds.width - contentEdgeInsets.right - view.bounds.width
         }
     }
 
