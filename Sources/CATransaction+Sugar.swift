@@ -7,7 +7,7 @@ import QuartzCore.CATransaction
 
 extension CATransaction {
 
-    static func commitWithDisabledActions<T>(_ body: () throws -> T) rethrows -> T {
+    static func withDisabledActions<T>(_ body: () throws -> T) rethrows -> T {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         defer {
@@ -16,12 +16,16 @@ extension CATransaction {
         return try body()
     }
 
-    static func commit<T>(withDuration duration: CFTimeInterval,
-                          timingFunction: CAMediaTimingFunction,
-                          animations: () throws -> T) rethrows -> T {
+    static func withDuration<T>(_ duration: CFTimeInterval,
+                                timingFunction: CAMediaTimingFunction,
+                                animations: () throws -> T,
+                                completion: (() -> Void)? = nil) rethrows -> T {
         CATransaction.begin()
         CATransaction.setAnimationDuration(duration)
         CATransaction.setAnimationTimingFunction(timingFunction)
+        if let completion = completion {
+            CATransaction.setCompletionBlock(completion)
+        }
         defer {
             CATransaction.commit()
         }

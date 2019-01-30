@@ -22,7 +22,6 @@ final class ViewController: UIViewController {
         button.setBackgroundColor(.white, for: .normal)
         button.setBorderColor(.red, for: .normal)
         button.setShadowOpacity(0.6, for: .normal)
-        button.setShadowRadius(3.0, for: .normal)
         button.setImage(UIImage(named: "icFacebook"), for: .normal)
         button.cornerRadius = 10
         button.addTarget(self, action: #selector(dynamicButtonPressed), for: .touchUpInside)
@@ -38,20 +37,9 @@ final class ViewController: UIViewController {
         button.setBackgroundColor(.white, for: .normal)
         button.setBorderColor(.red, for: .normal)
         button.setShadowOpacity(0.6, for: .normal)
-        button.setShadowRadius(3.0, for: .normal)
         button.setImage(UIImage(named: "icFacebook"), for: .normal)
         button.cornerRadius = 10
         button.addTarget(self, action: #selector(dynamicButtonPressed), for: .touchUpInside)
-        return button
-    }()
-
-    private lazy var systemButton: UIButton = {
-        let button = UIButton(type: .system)
-//        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .blue
-        button.setBackgroundImage(UIImage.colored(.red)?.withRenderingMode(.alwaysOriginal), for: .normal)
-        button.setBackgroundImage(UIImage.colored(.blue)?.withRenderingMode(.alwaysOriginal), for: .highlighted)
-        button.addTarget(self, action: #selector(systemButtonPressed), for: .touchUpInside)
         return button
     }()
 
@@ -59,7 +47,6 @@ final class ViewController: UIViewController {
         super.viewDidLoad()
         view.addSubview(horizontalButton)
         view.addSubview(verticalButton)
-//        view.addSubview(systemButton)
 //        view.addSubview(mainView)
     }
 
@@ -67,15 +54,14 @@ final class ViewController: UIViewController {
         super.viewDidLayoutSubviews()
         horizontalButton.frame = CGRect(x: 16, y: 200, width: view.bounds.width - 32, height: 40)
         verticalButton.frame = CGRect(x: 16, y: horizontalButton.frame.maxY + 16, width: view.bounds.width / 2, height: view.bounds.width / 2)
-//        systemButton.frame = CGRect(x: 16, y: horizontalButton.frame.maxY + 16, width: view.bounds.width - 32, height: 40)
 //        mainView.frame = CGRect(x: 16, y: systemButton.frame.maxY + 16, width: view.bounds.width - 32, height: 80)
     }
 
     @objc private func dynamicButtonPressed() {
-        print("\(self) \(#function)")
+//        print("\(self) \(#function)")
     }
 
     @objc private func systemButtonPressed() {
-        print("\(self) \(#function)")
+//        print("\(self) \(#function)")
     }
 }

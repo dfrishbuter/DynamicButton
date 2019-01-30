@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		6D3EF7B721676F7000251869 /* DynamicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3EF7B621676F7000251869 /* DynamicButton.swift */; };
 		6D3EF7BD2167710E00251869 /* DynamicButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 6D3EF7B9216770FF00251869 /* DynamicButton.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6D4CA68022018593001D5600 /* CATransition+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D4CA67F22018592001D5600 /* CATransition+Sugar.swift */; };
 		6D594FD42200BA0E000A072D /* CGSize+Sugar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D594FD32200BA0E000A072D /* CGSize+Sugar.swift */; };
 		6D81198021FEE209001FE05A /* GradientDirection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81197F21FEE209001FE05A /* GradientDirection.swift */; };
 		6D81198221FEE3EE001FE05A /* UIControlState+Hashable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */; };
@@ -22,6 +23,7 @@
 		6D3EF7B621676F7000251869 /* DynamicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicButton.swift; sourceTree = "<group>"; };
 		6D3EF7B9216770FF00251869 /* DynamicButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DynamicButton.h; sourceTree = "<group>"; };
 		6D3EF7BA216770FF00251869 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6D4CA67F22018592001D5600 /* CATransition+Sugar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CATransition+Sugar.swift"; sourceTree = "<group>"; };
 		6D594FD32200BA0E000A072D /* CGSize+Sugar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CGSize+Sugar.swift"; sourceTree = "<group>"; };
 		6D81197F21FEE209001FE05A /* GradientDirection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GradientDirection.swift; sourceTree = "<group>"; };
 		6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIControlState+Hashable.swift"; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 				6D81197F21FEE209001FE05A /* GradientDirection.swift */,
 				6D81198121FEE3EE001FE05A /* UIControlState+Hashable.swift */,
 				6D81198321FF05AC001FE05A /* CATransaction+Sugar.swift */,
+				6D4CA67F22018592001D5600 /* CATransition+Sugar.swift */,
 				6D81198B21FF2A95001FE05A /* UIColor+Sugar.swift */,
 				6D81198D21FF3229001FE05A /* Optional+Sugar.swift */,
 				6D594FD32200BA0E000A072D /* CGSize+Sugar.swift */,
@@ -167,6 +170,7 @@
 				6D81198C21FF2A95001FE05A /* UIColor+Sugar.swift in Sources */,
 				6D81198E21FF3229001FE05A /* Optional+Sugar.swift in Sources */,
 				6D81198421FF05AC001FE05A /* CATransaction+Sugar.swift in Sources */,
+				6D4CA68022018593001D5600 /* CATransition+Sugar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
