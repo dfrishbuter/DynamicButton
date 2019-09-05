@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import NVActivityIndicatorView
 
 open class DynamicButton: UIControl {
 
@@ -25,10 +26,10 @@ open class DynamicButton: UIControl {
         // MARK: - CALayerDelegate
 
         override open func action(for layer: CALayer, forKey event: String) -> CAAction? {
-            guard event == #keyPath(CALayer.borderColor) else {
-                return nil
+            if event == #keyPath(CALayer.borderColor) {
+                return CATransition.fadeTransition(withDuration: Constants.animationDuration)
             }
-            return CATransition.fadeTransition(withDuration: Constants.animationDuration)
+            return super.action(for: layer, forKey: event)
         }
     }
 
@@ -55,7 +56,7 @@ open class DynamicButton: UIControl {
         case end
     }
 
-    open var contentEdgeInsets: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
+    open var contentEdgeInsets: UIEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8)
     open var layoutDirection: LayoutDirection = .horizontal
     open var layoutHorizontalAlignment: LayoutHorizontalAlignment = .center
     open var layoutVerticalAlignment: LayoutVerticalAlignment = .center
@@ -122,11 +123,13 @@ open class DynamicButton: UIControl {
         return imageView
     }()
 
-    private(set) lazy var titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Hello world!"
-        return label
-    }()
+    private(set) lazy var titleLabel: UILabel = .init()
+
+    private lazy var activityIndicatorView: NVActivityIndicatorView = .init(
+        frame: CGRect(origin: .zero, size: CGSize(width: 24, height: 24)),
+        type: .circleStrokeSpin,
+        color: .white
+    )
 
     private lazy var backgroundLayer: CAGradientLayer = .init()
 
@@ -167,47 +170,97 @@ open class DynamicButton: UIControl {
                 return
             }
             super.isEnabled = newValue
-            update(to: state, animated: false)
+            update(to: state, animated: true)
+        }
+    }
+
+    open var isLoading: Bool = false {
+        didSet {
+            if isLoading != oldValue {
+                adjustViewToState(animated: false)
+            }
         }
     }
 
     // MARK: - Appearance
 
     public var automaticallyAdjustsWhenHighlighted: Bool = true
+    public var automaticallyAdjustsWhenDisabled: Bool = true
 
-    private var titles: [State: String?] = [:]
-    private var images: [State: UIImage?] = [:]
+    public var titleFont: UIFont {
+        get {
+            return titleLabel.font
+        }
+        set {
+            titleLabel.font = newValue
+        }
+    }
 
+    public var borderWidth: CGFloat {
+        get {
+            return contentView.layer.borderWidth
+        }
+        set {
+            contentView.layer.borderWidth = newValue
+        }
+    }
+
+    public var cornerRadius: CGFloat {
+        get {
+            return layer.cornerRadius
+        }
+        set {
+            layer.cornerRadius = newValue
+            contentView.layer.cornerRadius = newValue
+        }
+    }
+
+    public var shadowOffset: CGSize {
+        get {
+            return layer.shadowOffset
+        }
+        set {
+            layer.shadowOffset = newValue
+        }
+    }
+
+    public var shadowColor: UIColor? {
+        get {
+            if let color = layer.shadowColor {
+                return UIColor(cgColor: color)
+            }
+            return nil
+        }
+        set {
+            layer.shadowColor = newValue?.cgColor
+        }
+    }
+
+    public var shadowRadius: CGFloat {
+        get {
+            return layer.shadowRadius
+        }
+        set {
+            layer.shadowRadius = newValue
+        }
+    }
+
+    public var activityIndicatorColor: UIColor {
+        get {
+            return activityIndicatorView.color
+        }
+        set {
+            activityIndicatorView.color = newValue
+        }
+    }
+
+    private var titles: [State: String] = [:]
+    private var images: [State: UIImage] = [:]
     private var titleColors: [State: UIColor] = [:]
     private var backgroundColors: [State: UIColor] = [:]
     private var gradients: [State: Gradient] = [:]
     private var borderColors: [State: UIColor] = [:]
     private var shadowOpacities: [State: Float] = [:]
-
-    private var borderWidth: CGFloat = 1 {
-        didSet {
-            contentView.layer.borderWidth = borderWidth
-        }
-    }
-
-    public var cornerRadius: CGFloat = 0 {
-        didSet {
-            layer.cornerRadius = cornerRadius
-            contentView.layer.cornerRadius = cornerRadius
-        }
-    }
-
-    var shadowOffset: CGSize = .init(width: 0, height: 2) {
-        didSet {
-            layer.shadowOffset = shadowOffset
-        }
-    }
-
-    var shadowColor: UIColor = UIColor.black.withAlphaComponent(0.6) {
-        didSet {
-            layer.shadowColor = shadowColor.cgColor
-        }
-    }
 
     // MARK: - Lifecycle
 
@@ -233,6 +286,7 @@ open class DynamicButton: UIControl {
 
         contentView.addSubview(imageView)
         contentView.addSubview(titleLabel)
+        contentView.addSubview(activityIndicatorView)
     }
 
     // MARK: - Layout
@@ -248,8 +302,11 @@ open class DynamicButton: UIControl {
         case .vertical:
             layoutVertically()
         }
+
+        activityIndicatorView.center = contentView.center
     }
 
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     private func layoutHorizontally() {
         let leftView = leftViewForHorizontalLayout()
         let rightView = rightViewForHorizontalLayout()
@@ -308,6 +365,7 @@ open class DynamicButton: UIControl {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity function_body_length
     private func layoutVertically() {
         let topView = topViewForVerticalLayout()
         let bottomView = bottomViewForVerticalLayout()
@@ -420,16 +478,17 @@ open class DynamicButton: UIControl {
 
     open func setTitle(_ title: String?, for state: State) {
         titles[state] = title
+        adjustTitleLabelToState()
     }
 
     open func setTitleColor(_ color: UIColor?, for state: State) {
         titleColors[state] = color
-        adjustViewToState()
+        adjustTitleLabelToState()
     }
 
     open func setImage(_ image: UIImage?, for state: State) {
         images[state] = image
-        imageView.image = image
+        adjustImageViewToState()
     }
 
     open func setGradient(_ gradient: Gradient, for state: State) {
@@ -448,8 +507,8 @@ open class DynamicButton: UIControl {
     }
 
     open func setShadowOpacity(_ opacity: Float, for state: State) {
-        layer.shadowOpacity = opacity
         shadowOpacities[state] = opacity
+        adjustLayerShadowOpacityToState()
     }
 
     // MARK: - Adjustment
@@ -463,32 +522,21 @@ open class DynamicButton: UIControl {
     private func adjustLayerShadowOpacityToState() {
         if let shadowOpacity = shadowOpacities[state] {
             layer.shadowOpacity = shadowOpacity
-        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
+        } else if state.contains(.highlighted), automaticallyAdjustsWhenHighlighted {
             layer.shadowOpacity = 0.0
         }
     }
 
     private func adjustBackgroundLayerToState() {
-        if let backgroundColor = backgroundColors[state] {
-            backgroundLayer.backgroundColor = backgroundColor.cgColor
-        } else if let backgroundColor = backgroundColors[.normal] {
-            if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-                backgroundLayer.backgroundColor = backgroundColor.lighten().cgColor
-            }
-        }
+        backgroundLayer.backgroundColor = color(from: backgroundColors, for: state)?.cgColor
+        backgroundLayer.colors = gradientColors(from: gradients, for: state)?.map { $0.cgColor }
 
-        if let gradient = gradients[state] {
-            backgroundLayer.colors = gradient.colors.map { $0.cgColor }
-            let points = gradientPoints(for: gradient.direction)
+        if let points = gradientPoints(from: gradients, for: state) {
             backgroundLayer.startPoint = points.start
             backgroundLayer.endPoint = points.end
-        } else if let gradient = gradients[.normal] {
-            if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-                backgroundLayer.colors = gradient.colors.map { $0.lighten().cgColor }
-                let points = gradientPoints(for: gradient.direction)
-                backgroundLayer.startPoint = points.start
-                backgroundLayer.endPoint = points.end
-            }
+        } else {
+            backgroundLayer.startPoint = .zero
+            backgroundLayer.endPoint = .zero
         }
     }
 
@@ -504,30 +552,52 @@ open class DynamicButton: UIControl {
     }
 
     private func adjustBorderToState() {
-        if let borderColor = borderColors[state] {
-            contentView.layer.borderColor = borderColor.cgColor
-        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-            if let borderColor = borderColors[.normal] {
-                contentView.layer.borderColor = borderColor.lighten().cgColor
-            }
+        contentView.layer.borderColor = color(from: borderColors, for: state)?.cgColor
+    }
+
+    private func adjustTitleLabelToState() {
+        titleLabel.text = title(from: titles, for: state)
+
+        if isLoading {
+            titleLabel.textColor = .clear
+        } else {
+            titleLabel.textColor = color(from: titleColors, for: state)
         }
     }
 
-    private func adjustViewToState() {
-        if let titleColor = titleColors[state] {
-            titleLabel.textColor = titleColor
-        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-            if let titleColor = titleColors[.normal] {
-                titleLabel.textColor = titleColor.lighten()
-            }
+    private func adjustImageViewToState() {
+        imageView.image = image(from: images, for: state)
+    }
+
+    private func adjustActivityIndicatorViewToState() {
+        if isLoading {
+            activityIndicatorView.startAnimating()
+        } else {
+            activityIndicatorView.stopAnimating()
         }
-        if let image = images[state] {
-            imageView.image = image
-        } else if state == .highlighted, automaticallyAdjustsWhenHighlighted {
-            if let image = images[.normal] {
-                imageView.image = image?.tinted(with: UIColor.white, alpha: 0.5)
-            }
+    }
+
+    private func adjustViewToState(animated: Bool) {
+        if !animated {
+            adjustTitleLabelToState()
+            adjustImageViewToState()
+        } else {
+            UIView.transition(
+                with: titleLabel,
+                duration: Constants.animationDuration,
+                options: [.allowUserInteraction, .curveEaseOut, .transitionCrossDissolve],
+                animations: adjustTitleLabelToState,
+                completion: nil
+            )
+            UIView.transition(
+                with: imageView,
+                duration: Constants.animationDuration,
+                options: [.allowUserInteraction, .curveEaseOut, .transitionCrossDissolve],
+                animations: adjustImageViewToState,
+                completion: nil
+            )
         }
+        adjustActivityIndicatorViewToState()
     }
 
     // MARK: - Animations
@@ -550,27 +620,131 @@ open class DynamicButton: UIControl {
         DispatchQueue.main.async {
             if animated {
                 let duration: TimeInterval = Constants.animationDuration
+                // swiftlint:disable:next trailing_closure
                 CATransaction.withDuration(duration, timingFunction: CAMediaTimingFunction(name: .easeOut), animations: {
                     self.adjustLayersToState()
                 })
-                UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseOut], animations: {
-                    self.adjustViewToState()
-                })
+                self.adjustViewToState(animated: animated)
             } else {
                 CATransaction.withDisabledActions {
                     self.adjustLayersToState()
                 }
-                self.adjustViewToState()
+                self.adjustViewToState(animated: false)
             }
+        }
+    }
+
+    // MARK: - Utility
+
+    private func color(from colors: [UIControl.State: UIColor], for state: UIControl.State) -> UIColor? {
+        if state.contains(.highlighted) {
+            if let color = colors[.highlighted] {
+                return color
+            } else if automaticallyAdjustsWhenHighlighted, let color = colors[.normal] {
+                return color.with(brightnessPercentage: 1.2)
+            } else {
+                return colors[.normal]
+            }
+        } else if state.contains(.disabled) {
+            if let color = colors[.disabled] {
+                return color
+            } else if automaticallyAdjustsWhenDisabled, let color = colors[.normal] {
+                return color.with(brightnessPercentage: 0.8)
+            } else {
+                return colors[.normal]
+            }
+        } else if state.contains(.normal) {
+            return colors[.normal]
+        } else {
+            return nil
+        }
+    }
+
+    private func gradientPoints(from gradients: [UIControl.State: Gradient],
+                                for state: UIControl.State) -> (start: CGPoint, end: CGPoint)? {
+        var gradient: Gradient?
+        if state.contains(.highlighted) {
+            gradient = gradients[.highlighted] ?? gradients[.normal]
+        } else if state.contains(.disabled) {
+            gradient = gradients[.disabled] ?? gradients[.normal]
+        } else {
+            gradient = gradients[.normal]
+        }
+
+        if let gradient = gradient {
+            return gradientPoints(for: gradient.direction)
+        }
+
+        return nil
+    }
+
+    private func gradientColors(from gradients: [UIControl.State: Gradient],
+                                for state: UIControl.State) -> [UIColor]? {
+        if state.contains(.highlighted) {
+            if let gradient = gradients[.highlighted] {
+                return gradient.colors
+            } else if automaticallyAdjustsWhenHighlighted, let gradient = gradients[.normal] {
+                return gradient.colors.map { $0.with(brightnessPercentage: 1.2) }
+            } else {
+                return gradients[.normal]?.colors
+            }
+        } else if state.contains(.disabled) {
+            if let gradient = gradients[.disabled] {
+                return gradient.colors
+            } else if automaticallyAdjustsWhenDisabled, let gradient = gradients[.normal] {
+                return gradient.colors.map { $0.with(brightnessPercentage: 0.8) }
+            } else {
+                return gradients[.normal]?.colors
+            }
+        } else if state.contains(.normal) {
+            return gradients[.normal]?.colors
+        } else {
+            return nil
+        }
+    }
+
+    private func title(from titles: [UIControl.State: String], for state: UIControl.State) -> String? {
+        if state.contains(.highlighted) {
+            return titles[.highlighted] ?? titles[.normal]
+        } else if state.contains(.disabled) {
+            return titles[.disabled] ?? titles[.normal]
+        } else if state.contains(.normal) {
+            return titles[.normal]
+        } else {
+            return nil
+        }
+    }
+
+    private func image(from images: [UIControl.State: UIImage], for state: UIControl.State) -> UIImage? {
+        if state.contains(.highlighted) {
+            if let image = images[.highlighted] {
+                return image
+            } else if automaticallyAdjustsWhenHighlighted, let image = images[.normal] {
+                return image.tinted(with: .white, alpha: 0.6)
+            } else {
+                return images[.normal]
+            }
+        } else if state.contains(.disabled) {
+            if let image = images[.disabled] {
+                return image
+            } else if automaticallyAdjustsWhenDisabled, let image = images[.normal] {
+                return image.tinted(with: .lightGray, alpha: 0.6)
+            } else {
+                return images[.normal]
+            }
+        } else if state.contains(.normal) {
+            return images[.normal]
+        } else {
+            return nil
         }
     }
 
     // MARK: - CALayerDelegate
 
     override open func action(for layer: CALayer, forKey event: String) -> CAAction? {
-        guard event == #keyPath(CALayer.shadowOpacity) else {
-            return nil
+        if event == #keyPath(CALayer.shadowOpacity) {
+            return CATransition.fadeTransition(withDuration: Constants.animationDuration)
         }
-        return CATransition.fadeTransition(withDuration: Constants.animationDuration)
+        return super.action(for: layer, forKey: event)
     }
 }

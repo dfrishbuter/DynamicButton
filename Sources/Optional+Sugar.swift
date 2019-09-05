@@ -3,7 +3,7 @@
 //  Copyright © 2019 Dmitry Frishbuter. All rights reserved.
 //
 
-extension Optional where Wrapped == Collection {
+extension Optional where Wrapped: Collection {
 
     var isNilOrEmpty: Bool {
         switch self {
