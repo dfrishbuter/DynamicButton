@@ -4,7 +4,6 @@
 //
 
 import UIKit
-import NVActivityIndicatorView
 
 open class DynamicButton: UIControl {
 
@@ -123,15 +122,23 @@ open class DynamicButton: UIControl {
         return imageView
     }()
 
-    private(set) lazy var titleLabel: UILabel = .init()
-
-    private lazy var activityIndicatorView: NVActivityIndicatorView = .init(
-        frame: CGRect(origin: .zero, size: CGSize(width: 24, height: 24)),
-        type: .circleStrokeSpin,
-        color: .white
-    )
+    private(set) public lazy var titleLabel: UILabel = .init()
 
     private lazy var backgroundLayer: CAGradientLayer = .init()
+
+    private var firstView: UIView? {
+        if case ImageAlignment.beginning = imageAlignment {
+            return imageView.image != nil ? imageView : nil
+        }
+        return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
+    }
+
+    private var secondView: UIView? {
+        if case ImageAlignment.beginning = imageAlignment {
+            return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
+        }
+        return imageView.image != nil ? imageView : nil
+    }
 
     // MARK: - UIControl
 
@@ -171,14 +178,6 @@ open class DynamicButton: UIControl {
             }
             super.isEnabled = newValue
             update(to: state, animated: true)
-        }
-    }
-
-    open var isLoading: Bool = false {
-        didSet {
-            if isLoading != oldValue {
-                adjustViewToState(animated: false)
-            }
         }
     }
 
@@ -245,15 +244,6 @@ open class DynamicButton: UIControl {
         }
     }
 
-    public var activityIndicatorColor: UIColor {
-        get {
-            return activityIndicatorView.color
-        }
-        set {
-            activityIndicatorView.color = newValue
-        }
-    }
-
     private var titles: [State: String] = [:]
     private var images: [State: UIImage] = [:]
     private var titleColors: [State: UIColor] = [:]
@@ -286,7 +276,6 @@ open class DynamicButton: UIControl {
 
         contentView.addSubview(imageView)
         contentView.addSubview(titleLabel)
-        contentView.addSubview(activityIndicatorView)
     }
 
     // MARK: - Layout
@@ -302,16 +291,20 @@ open class DynamicButton: UIControl {
         case .vertical:
             layoutVertically()
         }
-
-        activityIndicatorView.center = contentView.center
     }
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
     private func layoutHorizontally() {
-        let leftView = leftViewForHorizontalLayout()
-        let rightView = rightViewForHorizontalLayout()
-        leftView?.frame.size = firstViewSize
-        rightView?.frame.size = secondViewSize
+        let leftView = firstView
+        let rightView = secondView
+        leftView?.frame.size = CGSize(
+            width: firstViewWidthForHorizontalLayout(),
+            height: firstViewHeightForHorizontalLayout()
+        )
+        rightView?.frame.size = CGSize(
+            width: secondViewWidthForHorizontalLayout(),
+            height: secondViewHeightForHorizontalLayout()
+        )
 
         switch layoutHorizontalAlignment {
         case .left:
@@ -367,10 +360,27 @@ open class DynamicButton: UIControl {
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
     private func layoutVertically() {
-        let topView = topViewForVerticalLayout()
-        let bottomView = bottomViewForVerticalLayout()
-        topView?.frame.size = firstViewSize
-        bottomView?.frame.size = secondViewSize
+        let topView = firstView
+        let bottomView = secondView
+        topView?.frame.size = CGSize(
+            width: firstViewWidthForVerticalLayout(),
+            height: firstViewHeightForVerticalLayout()
+        )
+        bottomView?.frame.size = CGSize(
+            width: secondViewWidthForVerticalLayout(),
+            height: secondViewHeightForVerticalLayout()
+        )
+
+        if layoutVerticalAlignment == .justified, bottomView == nil {
+            topView?.frame.size.width = bounds.size.width - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            topView?.frame.size.width = firstViewSize.width
+        }
+        if layoutVerticalAlignment == .justified, topView == nil {
+            bottomView?.frame.size.width = bounds.size.width - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            bottomView?.frame.size.width = secondViewSize.width
+        }
 
         switch layoutVerticalAlignment {
         case .top:
@@ -424,34 +434,6 @@ open class DynamicButton: UIControl {
         }
     }
 
-    private func leftViewForHorizontalLayout() -> UIView? {
-        if case ImageAlignment.beginning = imageAlignment {
-            return imageView.image != nil ? imageView : nil
-        }
-        return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
-    }
-
-    private func rightViewForHorizontalLayout() -> UIView? {
-        if case ImageAlignment.beginning = imageAlignment {
-            return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
-        }
-        return imageView.image != nil ? imageView : nil
-    }
-
-    private func topViewForVerticalLayout() -> UIView? {
-        if case ImageAlignment.beginning = imageAlignment {
-            return imageView.image != nil ? imageView : nil
-        }
-        return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
-    }
-
-    private func bottomViewForVerticalLayout() -> UIView? {
-        if case ImageAlignment.beginning = imageAlignment {
-            return (titleLabel.text != nil || titleLabel.attributedText != nil) ? titleLabel : nil
-        }
-        return imageView.image != nil ? imageView : nil
-    }
-
     private func arrangeViewVerticallyForHorizontalLayout(_ view: UIView) {
         switch layoutVerticalAlignment {
         case .top, .justified:
@@ -460,6 +442,70 @@ open class DynamicButton: UIControl {
             view.frame.origin.y = (bounds.height - view.bounds.height) / 2
         case .bottom:
             view.frame.origin.y = bounds.height - contentEdgeInsets.bottom - view.bounds.height
+        }
+    }
+
+    private func firstViewWidthForHorizontalLayout() -> CGFloat {
+        if layoutHorizontalAlignment == .justified, secondView == nil {
+            return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
+        } else {
+            return firstViewSize.width
+        }
+    }
+
+    private func secondViewWidthForHorizontalLayout() -> CGFloat {
+        if layoutHorizontalAlignment == .justified, firstView == nil {
+            return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
+        } else {
+            return secondViewSize.width
+        }
+    }
+
+    private func firstViewWidthForVerticalLayout() -> CGFloat {
+        if layoutHorizontalAlignment == .justified {
+            return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
+        } else {
+            return firstViewSize.width
+        }
+    }
+
+    private func secondViewWidthForVerticalLayout() -> CGFloat {
+        if layoutHorizontalAlignment == .justified {
+            return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
+        } else {
+            return secondViewSize.width
+        }
+    }
+
+    private func firstViewHeightForHorizontalLayout() -> CGFloat {
+        if layoutVerticalAlignment == .justified {
+            return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            return firstViewSize.height
+        }
+    }
+
+    private func secondViewHeightForHorizontalLayout() -> CGFloat {
+        if layoutVerticalAlignment == .justified, firstView == nil {
+            return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            return secondViewSize.width
+        }
+    }
+
+    private func firstViewHeightForVerticalLayout() -> CGFloat {
+        if layoutVerticalAlignment == .justified, secondView == nil {
+            return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            return firstViewSize.width
+        }
+    }
+
+    private func secondViewHeightForVerticalLayout() -> CGFloat {
+        if layoutVerticalAlignment == .justified, secondView == nil {
+            return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
+        } else {
+            return secondViewSize.height
         }
     }
 
@@ -557,24 +603,11 @@ open class DynamicButton: UIControl {
 
     private func adjustTitleLabelToState() {
         titleLabel.text = title(from: titles, for: state)
-
-        if isLoading {
-            titleLabel.textColor = .clear
-        } else {
-            titleLabel.textColor = color(from: titleColors, for: state)
-        }
+        titleLabel.textColor = color(from: titleColors, for: state)
     }
 
     private func adjustImageViewToState() {
         imageView.image = image(from: images, for: state)
-    }
-
-    private func adjustActivityIndicatorViewToState() {
-        if isLoading {
-            activityIndicatorView.startAnimating()
-        } else {
-            activityIndicatorView.stopAnimating()
-        }
     }
 
     private func adjustViewToState(animated: Bool) {
@@ -597,7 +630,6 @@ open class DynamicButton: UIControl {
                 completion: nil
             )
         }
-        adjustActivityIndicatorViewToState()
     }
 
     // MARK: - Animations
