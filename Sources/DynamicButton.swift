@@ -69,47 +69,18 @@ open class DynamicButton: UIControl {
         return .zero
     }
 
-    private var titleSize: CGSize {
-        var size = bounds.size.minusInsets(contentEdgeInsets)
-        switch layoutDirection {
-        case .horizontal:
-            size.width -= (imageSize.width + contentSpacing)
-        case .vertical:
-            size.height -= (imageSize.height + contentSpacing)
-        }
-        return titleLabel.sizeThatFits(size)
-    }
-
     private var firstViewSize: CGSize {
         if case ImageAlignment.beginning = imageAlignment {
             return imageSize
         }
-        return titleSize
+        return titleSizeThatFits(bounds.size)
     }
 
     private var secondViewSize: CGSize {
         if case ImageAlignment.beginning = imageAlignment {
-            return titleSize
+            return titleSizeThatFits(bounds.size)
         }
         return imageSize
-    }
-
-    private var contentWidth: CGFloat {
-        switch layoutDirection {
-        case .horizontal:
-            return imageSize.width + titleSize.width + contentSpacing
-        case .vertical:
-            return max(imageSize.width, titleSize.width)
-        }
-    }
-
-    private var contentHeight: CGFloat {
-        switch layoutDirection {
-        case .horizontal:
-            return max(imageSize.height, titleSize.height)
-        case .vertical:
-            return imageSize.height + titleSize.height + contentSpacing
-        }
     }
 
     // MARK: - Subviews
@@ -192,6 +163,24 @@ open class DynamicButton: UIControl {
         }
         set {
             titleLabel.font = newValue
+        }
+    }
+
+    public var titleNumberOfLines: Int {
+        get {
+            return titleLabel.numberOfLines
+        }
+        set {
+            titleLabel.numberOfLines = newValue
+        }
+    }
+
+    public var titleTextAlignment: NSTextAlignment {
+        get {
+            return titleLabel.textAlignment
+        }
+        set {
+            titleLabel.textAlignment = newValue
         }
     }
 
@@ -280,6 +269,34 @@ open class DynamicButton: UIControl {
 
     // MARK: - Layout
 
+    private func titleSizeThatFits(_ fitSize: CGSize) -> CGSize {
+        var size = fitSize.minusInsets(contentEdgeInsets)
+        switch layoutDirection {
+        case .horizontal:
+            size.width -= (imageSize.width + contentSpacing)
+        case .vertical:
+            size.height -= (imageSize.height + contentSpacing)
+        }
+        return titleLabel.sizeThatFits(size)
+    }
+
+    private func contentSizeThatFits(_ fitSize: CGSize) -> CGSize {
+        let titleSize = titleSizeThatFits(fitSize)
+        let imageSize = self.imageSize
+        switch layoutDirection {
+        case .horizontal:
+            return CGSize(
+                width: imageSize.width + contentSpacing + titleSize.width,
+                height: max(imageSize.height, titleSize.height)
+            )
+        case .vertical:
+            return CGSize(
+                width: max(imageSize.width, titleSize.width),
+                height: imageSize.height + contentSpacing + titleSize.height
+            )
+        }
+    }
+
     open override func layoutSubviews() {
         super.layoutSubviews()
         contentView.frame = bounds
@@ -291,6 +308,14 @@ open class DynamicButton: UIControl {
         case .vertical:
             layoutVertically()
         }
+    }
+
+    open override func sizeThatFits(_ size: CGSize) -> CGSize {
+        let contentSize = contentSizeThatFits(size)
+        return CGSize(
+            width: contentEdgeInsets.left + contentSize.width + contentEdgeInsets.right,
+            height: contentEdgeInsets.top + contentSize.height + contentEdgeInsets.bottom
+        )
     }
 
     // swiftlint:disable:next cyclomatic_complexity function_body_length
@@ -322,6 +347,7 @@ open class DynamicButton: UIControl {
             }
         case .center:
             if let leftView = leftView {
+                let contentWidth = contentSizeThatFits(bounds.size).width
                 leftView.frame.origin.x = (bounds.width - contentWidth) / 2
                 arrangeViewVerticallyForHorizontalLayout(leftView)
             }
@@ -398,6 +424,7 @@ open class DynamicButton: UIControl {
             }
         case .center:
             if let topView = topView {
+                let contentHeight = contentSizeThatFits(bounds.size).height
                 topView.frame.origin.y = (bounds.height - contentHeight) / 2
                 arrangeViewHorizontallyForVerticalLayout(topView)
             }
@@ -489,7 +516,7 @@ open class DynamicButton: UIControl {
         if layoutVerticalAlignment == .justified, firstView == nil {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
         } else {
-            return secondViewSize.width
+            return secondViewSize.height
         }
     }
 
@@ -497,7 +524,7 @@ open class DynamicButton: UIControl {
         if layoutVerticalAlignment == .justified, secondView == nil {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
         } else {
-            return firstViewSize.width
+            return firstViewSize.height
         }
     }
 
@@ -521,6 +548,19 @@ open class DynamicButton: UIControl {
     }
 
     // MARK: - Appearance Setters
+
+    open func resetAppearance() {
+        cornerRadius = 0
+        shadowOffset = .zero
+        shadowColor = nil
+        shadowRadius = 0
+        titleColors = [:]
+        gradients = [:]
+        backgroundColors = [:]
+        borderColors = [:]
+        shadowOpacities = [:]
+        update(to: state, animated: false)
+    }
 
     open func setTitle(_ title: String?, for state: State) {
         titles[state] = title
@@ -559,18 +599,28 @@ open class DynamicButton: UIControl {
 
     // MARK: - Adjustment
 
-    private func adjustLayersToState() {
-        adjustBackgroundLayerToState()
-        adjustLayerShadowOpacityToState()
-        adjustBorderToState()
+    private func adjustLayersToState(animated: Bool) {
+        func adjust() {
+            adjustBackgroundLayerToState()
+            adjustLayerShadowOpacityToState()
+            adjustBorderToState()
+        }
+
+        if animated {
+            let duration: TimeInterval = Constants.animationDuration
+            // swiftlint:disable:next trailing_closure
+            CATransaction.withDuration(duration, timingFunction: CAMediaTimingFunction(name: .easeOut), animations: {
+                adjust()
+            })
+        } else {
+            CATransaction.withDisabledActions {
+                adjust()
+            }
+        }
     }
 
     private func adjustLayerShadowOpacityToState() {
-        if let shadowOpacity = shadowOpacities[state] {
-            layer.shadowOpacity = shadowOpacity
-        } else if state.contains(.highlighted), automaticallyAdjustsWhenHighlighted {
-            layer.shadowOpacity = 0.0
-        }
+        layer.shadowOpacity = shadowOpacity(from: shadowOpacities, for: state) ?? 0
     }
 
     private func adjustBackgroundLayerToState() {
@@ -634,36 +684,9 @@ open class DynamicButton: UIControl {
 
     // MARK: - Animations
 
-    private func shadowOpacityAnimation(to value: Float) -> CABasicAnimation {
-        let opacityAnimation = CABasicAnimation(keyPath: #keyPath(CALayer.shadowOpacity))
-        opacityAnimation.toValue = value
-        opacityAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        return opacityAnimation
-    }
-
-    private func borderColorAnimation(to value: CGColor) -> CABasicAnimation {
-        let colorAnimation = CABasicAnimation(keyPath: #keyPath(CALayer.borderColor))
-        colorAnimation.toValue = value
-        colorAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        return colorAnimation
-    }
-
     private func update(to state: State, animated: Bool) {
-        DispatchQueue.main.async {
-            if animated {
-                let duration: TimeInterval = Constants.animationDuration
-                // swiftlint:disable:next trailing_closure
-                CATransaction.withDuration(duration, timingFunction: CAMediaTimingFunction(name: .easeOut), animations: {
-                    self.adjustLayersToState()
-                })
-                self.adjustViewToState(animated: animated)
-            } else {
-                CATransaction.withDisabledActions {
-                    self.adjustLayersToState()
-                }
-                self.adjustViewToState(animated: false)
-            }
-        }
+        adjustLayersToState(animated: animated)
+        adjustViewToState(animated: animated)
     }
 
     // MARK: - Utility
@@ -742,6 +765,18 @@ open class DynamicButton: UIControl {
             return titles[.disabled] ?? titles[.normal]
         } else if state.contains(.normal) {
             return titles[.normal]
+        } else {
+            return nil
+        }
+    }
+
+    private func shadowOpacity(from opacities: [UIControl.State: Float], for state: UIControl.State) -> Float? {
+        if state.contains(.highlighted) {
+            return opacities[.highlighted] ?? opacities[.normal]
+        } else if state.contains(.disabled) {
+            return opacities[.disabled] ?? opacities[.normal]
+        } else if state.contains(.normal) {
+            return opacities[.normal]
         } else {
             return nil
         }
