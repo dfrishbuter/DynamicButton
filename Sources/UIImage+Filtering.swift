@@ -12,11 +12,12 @@ public extension UIImage {
         UIGraphicsBeginImageContextWithOptions(rect.size, false, scale)
         draw(in: rect)
 
-        let ctx = UIGraphicsGetCurrentContext()
-        ctx!.setFillColor(color.cgColor)
-        ctx!.setAlpha(alpha)
-        ctx?.setBlendMode(.sourceAtop)
-        ctx!.fill(rect)
+        if let ctx = UIGraphicsGetCurrentContext() {
+            ctx.setFillColor(color.cgColor)
+            ctx.setAlpha(alpha)
+            ctx.setBlendMode(.sourceAtop)
+            ctx.fill(rect)
+        }
 
         let result = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
