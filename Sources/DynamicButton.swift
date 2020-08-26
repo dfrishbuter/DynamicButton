@@ -87,15 +87,19 @@ open class DynamicButton: UIControl {
 
     private(set) lazy var contentView: ContentView = .init()
 
-    private(set) lazy var imageView: UIImageView = {
+    public private(set) lazy var imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
 
-    private(set) public lazy var titleLabel: UILabel = .init()
+    public private(set) lazy var titleLabel: UILabel = .init()
 
-    private lazy var backgroundLayer: CAGradientLayer = .init()
+    private lazy var backgroundLayer: CAGradientLayer = {
+        let layer = CAGradientLayer()
+        layer.contentsGravity = .resizeAspectFill
+        return layer
+    }()
 
     private var firstView: UIView? {
         if case ImageAlignment.beginning = imageAlignment {
@@ -150,6 +154,10 @@ open class DynamicButton: UIControl {
             super.isEnabled = newValue
             update(to: state, animated: true)
         }
+    }
+
+    open override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        print("\(self) \(#function)")
     }
 
     // MARK: - Appearance
@@ -234,9 +242,11 @@ open class DynamicButton: UIControl {
     }
 
     private var titles: [State: String] = [:]
+    private var attributedTitles: [State: NSAttributedString] = [:]
     private var images: [State: UIImage] = [:]
     private var titleColors: [State: UIColor] = [:]
     private var backgroundColors: [State: UIColor] = [:]
+    private var backgroundImages: [State: UIImage] = [:]
     private var gradients: [State: Gradient] = [:]
     private var borderColors: [State: UIColor] = [:]
     private var shadowOpacities: [State: Float] = [:]
@@ -283,6 +293,7 @@ open class DynamicButton: UIControl {
     private func contentSizeThatFits(_ fitSize: CGSize) -> CGSize {
         let titleSize = titleSizeThatFits(fitSize)
         let imageSize = self.imageSize
+        let contentSpacing = (titleSize != .zero && imageSize != .zero) ? self.contentSpacing : 0
         switch layoutDirection {
         case .horizontal:
             return CGSize(
@@ -475,65 +486,57 @@ open class DynamicButton: UIControl {
     private func firstViewWidthForHorizontalLayout() -> CGFloat {
         if layoutHorizontalAlignment == .justified, secondView == nil {
             return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
-        } else {
-            return firstViewSize.width
         }
+        return firstViewSize.width
     }
 
     private func secondViewWidthForHorizontalLayout() -> CGFloat {
         if layoutHorizontalAlignment == .justified, firstView == nil {
             return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
-        } else {
-            return secondViewSize.width
         }
+        return secondViewSize.width
     }
 
     private func firstViewWidthForVerticalLayout() -> CGFloat {
         if layoutHorizontalAlignment == .justified {
             return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
-        } else {
-            return firstViewSize.width
         }
+        return firstViewSize.width
     }
 
     private func secondViewWidthForVerticalLayout() -> CGFloat {
         if layoutHorizontalAlignment == .justified {
             return bounds.size.width - contentEdgeInsets.left - contentEdgeInsets.right
-        } else {
-            return secondViewSize.width
         }
+        return secondViewSize.width
     }
 
     private func firstViewHeightForHorizontalLayout() -> CGFloat {
         if layoutVerticalAlignment == .justified {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
-        } else {
-            return firstViewSize.height
         }
+        return firstViewSize.height
     }
 
     private func secondViewHeightForHorizontalLayout() -> CGFloat {
         if layoutVerticalAlignment == .justified, firstView == nil {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
-        } else {
-            return secondViewSize.height
         }
+        return secondViewSize.height
     }
 
     private func firstViewHeightForVerticalLayout() -> CGFloat {
         if layoutVerticalAlignment == .justified, secondView == nil {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
-        } else {
-            return firstViewSize.height
         }
+        return firstViewSize.height
     }
 
     private func secondViewHeightForVerticalLayout() -> CGFloat {
         if layoutVerticalAlignment == .justified, secondView == nil {
             return bounds.size.height - contentEdgeInsets.top - contentEdgeInsets.bottom
-        } else {
-            return secondViewSize.height
         }
+        return secondViewSize.height
     }
 
     private func arrangeViewHorizontallyForVerticalLayout(_ view: UIView) {
@@ -572,6 +575,11 @@ open class DynamicButton: UIControl {
         adjustTitleLabelToState()
     }
 
+    open func setAttributedTitle(_ attributedTitle: NSAttributedString, for state: State) {
+        attributedTitles[state] = attributedTitle
+        adjustTitleLabelToState()
+    }
+
     open func setImage(_ image: UIImage?, for state: State) {
         images[state] = image
         adjustImageViewToState()
@@ -584,6 +592,11 @@ open class DynamicButton: UIControl {
 
     open func setBackgroundColor(_ color: UIColor?, for state: State) {
         backgroundColors[state] = color
+        adjustBackgroundLayerToState()
+    }
+
+    open func setBackgroundImage(_ image: UIImage?, for state: State) {
+        backgroundImages[state] = image
         adjustBackgroundLayerToState()
     }
 
@@ -626,6 +639,7 @@ open class DynamicButton: UIControl {
     private func adjustBackgroundLayerToState() {
         backgroundLayer.backgroundColor = color(from: backgroundColors, for: state)?.cgColor
         backgroundLayer.colors = gradientColors(from: gradients, for: state)?.map { $0.cgColor }
+        backgroundLayer.contents = backgroundImage(from: backgroundImages, for: state).map { $0.cgImage as Any }
 
         if let points = gradientPoints(from: gradients, for: state) {
             backgroundLayer.startPoint = points.start
@@ -654,6 +668,9 @@ open class DynamicButton: UIControl {
     private func adjustTitleLabelToState() {
         titleLabel.text = title(from: titles, for: state)
         titleLabel.textColor = color(from: titleColors, for: state)
+        if let attributedTitle = self.attributedTitle(from: attributedTitles, for: state) {
+            titleLabel.attributedText = attributedTitle
+        }
     }
 
     private func adjustImageViewToState() {
@@ -692,33 +709,76 @@ open class DynamicButton: UIControl {
     // MARK: - Utility
 
     private func color(from colors: [UIControl.State: UIColor], for state: UIControl.State) -> UIColor? {
-        if state.contains(.highlighted) {
+        if state.contains(.selected) {
+            if let color = colors[.selected] {
+                return color
+            } else if let color = colors[.highlighted] {
+                return color
+            }
+            return colors[.normal]
+        } else if state.contains(.highlighted) {
             if let color = colors[.highlighted] {
                 return color
             } else if automaticallyAdjustsWhenHighlighted, let color = colors[.normal] {
                 return color.with(brightnessPercentage: 1.2)
-            } else {
-                return colors[.normal]
             }
+            return colors[.normal]
         } else if state.contains(.disabled) {
             if let color = colors[.disabled] {
                 return color
             } else if automaticallyAdjustsWhenDisabled, let color = colors[.normal] {
                 return color.with(brightnessPercentage: 0.8)
-            } else {
-                return colors[.normal]
             }
+            return colors[.normal]
         } else if state.contains(.normal) {
             return colors[.normal]
-        } else {
-            return nil
         }
+        return nil
+    }
+
+    private func backgroundImage(from images: [UIControl.State: UIImage], for state: UIControl.State) -> UIImage? {
+        if state.contains(.selected) {
+            if let selected = images[.selected] {
+                return selected
+            } else if state.contains(.highlighted), let highlighted = images[.highlighted] {
+                return highlighted
+            } else {
+                return images[.normal]
+            }
+        } else if state.contains(.highlighted) {
+            if let image = images[.highlighted] {
+                return image
+            } else if automaticallyAdjustsWhenHighlighted, let image = images[.normal] {
+                return image.tinted(with: .white, alpha: 0.6)
+            } else {
+                return images[.normal]
+            }
+        } else if state.contains(.disabled) {
+            if let image = images[.disabled] {
+                return image
+            } else if automaticallyAdjustsWhenDisabled, let image = images[.normal] {
+                return image.tinted(with: .white, alpha: 0.6)
+            } else {
+                return images[.normal]
+            }
+        } else if state.contains(.normal) {
+            return images[.normal]
+        }
+        return nil
     }
 
     private func gradientPoints(from gradients: [UIControl.State: Gradient],
                                 for state: UIControl.State) -> (start: CGPoint, end: CGPoint)? {
         var gradient: Gradient?
-        if state.contains(.highlighted) {
+        if state.contains(.selected) {
+            if let selected = gradients[.selected] {
+                gradient = selected
+            } else if state.contains(.highlighted), let highlighted = gradients[.highlighted] {
+                gradient = highlighted
+            } else {
+                gradient = gradients[.normal]
+            }
+        } else if state.contains(.highlighted) {
             gradient = gradients[.highlighted] ?? gradients[.normal]
         } else if state.contains(.disabled) {
             gradient = gradients[.disabled] ?? gradients[.normal]
@@ -735,7 +795,14 @@ open class DynamicButton: UIControl {
 
     private func gradientColors(from gradients: [UIControl.State: Gradient],
                                 for state: UIControl.State) -> [UIColor]? {
-        if state.contains(.highlighted) {
+        if state.contains(.selected) {
+            if let selected = gradients[.selected] {
+                return selected.colors
+            } else if state.contains(.highlighted), let highlighted = gradients[.highlighted] {
+                return highlighted.colors
+            }
+            return gradients[.normal]?.colors
+        } else if state.contains(.highlighted) {
             if let gradient = gradients[.highlighted] {
                 return gradient.colors
             } else if automaticallyAdjustsWhenHighlighted, let gradient = gradients[.normal] {
@@ -753,57 +820,90 @@ open class DynamicButton: UIControl {
             }
         } else if state.contains(.normal) {
             return gradients[.normal]?.colors
-        } else {
-            return nil
         }
+        return nil
     }
 
-    private func title(from titles: [UIControl.State: String], for state: UIControl.State) -> String? {
-        if state.contains(.highlighted) {
+    private func title(from titles: [State: String], for state: State) -> String? {
+        if state.contains(.selected) {
+            if let selected = titles[.selected] {
+                return selected
+            } else if state.contains(.highlighted), let highlighted = titles[.highlighted] {
+                return highlighted
+            }
+            return titles[.normal]
+        } else if state.contains(.highlighted) {
             return titles[.highlighted] ?? titles[.normal]
         } else if state.contains(.disabled) {
             return titles[.disabled] ?? titles[.normal]
         } else if state.contains(.normal) {
             return titles[.normal]
-        } else {
-            return nil
         }
+        return nil
     }
 
-    private func shadowOpacity(from opacities: [UIControl.State: Float], for state: UIControl.State) -> Float? {
-        if state.contains(.highlighted) {
+    private func attributedTitle(from attributedTitles: [State: NSAttributedString], for state: State) -> NSAttributedString? {
+        if state.contains(.selected) {
+            if let selected = attributedTitles[.selected] {
+                return selected
+            } else if state.contains(.highlighted), let highlighted = attributedTitles[.highlighted] {
+                return highlighted
+            }
+            return attributedTitles[.normal]
+        } else if state.contains(.highlighted) {
+            return attributedTitles[.highlighted] ?? attributedTitles[.normal]
+        } else if state.contains(.disabled) {
+            return attributedTitles[.disabled] ?? attributedTitles[.normal]
+        } else if state.contains(.normal) {
+            return attributedTitles[.normal]
+        }
+        return nil
+    }
+
+    private func shadowOpacity(from opacities: [State: Float], for state: State) -> Float? {
+        if state.contains(.selected) {
+            if let selected = opacities[.selected] {
+                return selected
+            } else if state.contains(.highlighted), let highlighted = opacities[.highlighted] {
+                return highlighted
+            }
+            return opacities[.normal]
+        } else if state.contains(.highlighted) {
             return opacities[.highlighted] ?? opacities[.normal]
         } else if state.contains(.disabled) {
             return opacities[.disabled] ?? opacities[.normal]
         } else if state.contains(.normal) {
             return opacities[.normal]
-        } else {
-            return nil
         }
+        return nil
     }
 
-    private func image(from images: [UIControl.State: UIImage], for state: UIControl.State) -> UIImage? {
-        if state.contains(.highlighted) {
+    private func image(from images: [State: UIImage], for state: State) -> UIImage? {
+        if state.contains(.selected) {
+            if let selected = images[.selected] {
+                return selected
+            } else if state.contains(.highlighted), let highlighted = images[.highlighted] {
+                return highlighted
+            }
+            return images[.normal]
+        } else if state.contains(.highlighted) {
             if let image = images[.highlighted] {
                 return image
             } else if automaticallyAdjustsWhenHighlighted, let image = images[.normal] {
                 return image.tinted(with: .white, alpha: 0.6)
-            } else {
-                return images[.normal]
             }
+            return images[.normal]
         } else if state.contains(.disabled) {
             if let image = images[.disabled] {
                 return image
             } else if automaticallyAdjustsWhenDisabled, let image = images[.normal] {
                 return image.tinted(with: .lightGray, alpha: 0.6)
-            } else {
-                return images[.normal]
             }
+            return images[.normal]
         } else if state.contains(.normal) {
             return images[.normal]
-        } else {
-            return nil
         }
+        return nil
     }
 
     // MARK: - CALayerDelegate
@@ -813,5 +913,31 @@ open class DynamicButton: UIControl {
             return CATransition.fadeTransition(withDuration: Constants.animationDuration)
         }
         return super.action(for: layer, forKey: event)
+    }
+}
+
+extension UIControl.State: CustomStringConvertible {
+
+    public var description: String {
+        var description: String = ""
+        if contains(.highlighted) {
+            description.append("Highlighted")
+        }
+        if contains(.selected) {
+            if !description.isEmpty {
+                description.append(" & ")
+            }
+            description.append("Selected")
+        }
+        if contains(.disabled) {
+            if !description.isEmpty {
+                description.append(" & ")
+            }
+            description.append("Disabled")
+        }
+        if description.isEmpty, contains(.normal) {
+            description.insert(contentsOf: "Normal", at: description.index(description.startIndex, offsetBy: 0))
+        }
+        return description
     }
 }

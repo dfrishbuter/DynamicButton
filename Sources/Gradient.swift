@@ -3,6 +3,8 @@
 //  Copyright © 2019 Dmitry Frishbuter. All rights reserved.
 //
 
+import UIKit
+
 public class Gradient {
 
     public enum Direction {

@@ -3,7 +3,7 @@
 //  Copyright © 2019 Dmitry Frishbuter. All rights reserved.
 //
 
-import CoreImage
+import UIKit
 
 public extension UIImage {
 
